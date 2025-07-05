@@ -1,0 +1,4 @@
+pyspark>=3.0.0
+matplotlib
+seaborn
+pandas
