@@ -43,12 +43,22 @@ pip install -e .
 Inside your Jupyter Notebook or PySpark script:
 
 ```python
-from skewbalancer import auto_balance_skew
+from skewbalancer import auto_balance_skew, ValueSkewBalancer
 from pyspark.sql import SparkSession
 
+# Start Spark session
 spark = SparkSession.builder.master("local[*]").appName("SkewBalancer").getOrCreate()
-df = spark.read.csv("your_file.csv", header=True, inferSchema=True)
 
+# Load CSV with all fields as strings (safe default)
+df_raw = spark.read.csv("your_file.csv", header=True)
+
+# Use built-in schemaVisor to infer data types and non-nullable keys
+new_schema = ValueSkewBalancer.schemaVisor(df_raw)
+
+# Reload data using the optimized schema
+df = spark.read.csv("your_file.csv", header=True, schema=new_schema)
+
+# Run SkewBalancer
 df_balanced = auto_balance_skew(df, output_dir="outputs", partitions=10, verbose=True)
 ```
 
