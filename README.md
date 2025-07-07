@@ -1,4 +1,3 @@
-
 # SkewBalancer
 
 **SkewBalancer** is a plug-and-play PySpark utility for **automatically detecting value-based skew** in numeric columns and applying **salted keys** with visual analysis, repartitioning, and logical plan logging — all without requiring the user to understand the internals of Spark shuffling.
@@ -16,6 +15,7 @@
 - 🧪 Built-in `skewVisor()` for Z-Score bar plots, Boxplots, and Histograms
 - ⚙️ Repartitions on salted key for optimal parallelism
 - 🧾 Saves `.explain()` physical plans for both original and optimized versions
+- 🧠 `detectKey()` and `schemaVisor()` modules for intelligent schema inference
 
 ---
 
@@ -71,6 +71,9 @@ This:
    - Repartitions on salted key for parallelism and shuffle avoidance
 6. **Logical Plan Logs**
    - Saves `.explain()` outputs for performance review
+7. **Schema Intelligence**
+   - `detectKey()` identifies primary, composite, or surrogate keys
+   - `schemaVisor()` builds optimal schema with inferred types
 
 ---
 
