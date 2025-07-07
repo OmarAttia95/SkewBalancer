@@ -1,34 +1,30 @@
-# SkewBalancer
+# SkewBalancer: Automatic Value-Based Skew Fix for Apache Spark
 
-**SkewBalancer** is a plug-and-play PySpark utility for **automatically detecting value-based skew** in numeric columns and applying **salted keys** with visual analysis, repartitioning, and logical plan logging — all without requiring the user to understand the internals of Spark shuffling.
+SkewBalancer is a plug-and-play PySpark utility that **automatically detects** value-based skew in numeric columns and **applies smart salting** to balance your data—no deep Spark knowledge required. 🚀
 
-> ✅ Designed for Data Engineers and beginners alike.  
-> ✅ Optimize `groupBy`, `count`, and other aggregations without tuning Spark manually.
-
----
-
-## 🚀 Features
-
-- Auto-detect the most skewed numeric column using IQR percentile-based skew analysis
-- Auto-detect the best column for `groupBy()` based on low cardinality (≤ 20 distinct values)
-- Smart, value-aware salting based on percentile-zoned ranges (e.g., low, dense, high)
-- Built-in `skewVisor()` generates:
-  - Z-Score bar plots (before vs. after)
-  - Boxplots (original vs. salted)
-  - Histograms with overlaid distributions
-- Intelligent schema optimizer:
-  - `detectKey()` for primary, surrogate, or composite key detection
-  - `schemaVisor()` for non-nullable inference, character limits, and data type tuning
-- Seamless repartitioning on salted compound key for optimal parallelism
-- Logs and saves `.explain()` physical plans to visualize improvements in Spark’s DAG
-- Fully autonomous with fallback logic — designed for batch or real-time pipelines
-- Chainable via `.run_full_balance_pipeline()` and extensible via `auto_balance_skew()`
+> **For Beginners:** Think of *skewed data* as having too many of the same values in one group, which slows down processing. SkewBalancer spreads those values out evenly.
 
 ---
 
-## 📦 Installation
+## 🚀 Key Features
 
-Clone the repo and install locally:
+- **Auto Skew Detection:** Finds the most skewed numeric column using IQR and percentiles.
+- **Smart Group Key Selection:** Picks a low-cardinality column (≤ 20 uniques) for grouping.
+- **Value-Aware Salting:** Splits data into percentile-based “zones” and salts keys.
+- **Interactive Visual Reports:**  
+  - Z-Score bar charts (before vs. after)  
+  - Box plots comparing distributions  
+  - Histograms with overlays  
+- **Repartition for Performance:** Rebalances partitions on the new salted key.
+- **Schema Intelligence:**  
+  - `.detectKey()` finds primary/composite keys  
+  - `.schemaVisor()` infers optimal Spark types and nullability
+- **Logging & Explain Plans:** Saves `.explain()` outputs for side-by-side DAG comparison.
+- **One-Click Pipeline:** Chain everything with `.run_full_balance_pipeline()` or `auto_balance_skew()`.
+
+---
+
+## 🛠️ Installation
 
 ```bash
 git clone https://github.com/yourusername/SkewBalancer.git
@@ -36,95 +32,81 @@ cd SkewBalancer
 pip install -e .
 ```
 
+> **Tip:** Installing in “editable” mode lets you tweak the code locally.
+
 ---
 
-## 🧪 Usage
-
-Inside your Jupyter Notebook or PySpark script:
+## 📘 Usage Example
 
 ```python
-from skewbalancer import auto_balance_skew, ValueSkewBalancer
 from pyspark.sql import SparkSession
+from skewbalancer import auto_balance_skew, ValueSkewBalancer
 
-# Start Spark session
-spark = SparkSession.builder.master("local[*]").appName("SkewBalancer").getOrCreate()
+# Start Spark
+spark = SparkSession.builder     .appName("SkewBalancerTest")     .master("local[*]")     .getOrCreate()
 
-# Load CSV with all fields as strings (safe default)
-df_raw = spark.read.csv("your_file.csv", header=True)
+# Load data (all columns as strings)
+df_raw = spark.read.csv("data.csv", header=True)
 
-# Use built-in schemaVisor to infer data types and non-nullable keys
-new_schema = ValueSkewBalancer.schemaVisor(df_raw)
+# Smart schema detection
+optimized_schema = ValueSkewBalancer.schemaVisor(df_raw)
+df = spark.read.csv("data.csv", header=True, schema=optimized_schema)
 
-# Reload data using the optimized schema
-df = spark.read.csv("your_file.csv", header=True, schema=new_schema)
-
-# Run SkewBalancer
-df_balanced = auto_balance_skew(df, output_dir="outputs", partitions=10, verbose=True)
+# Auto-fix skew
+df_balanced = auto_balance_skew(
+    df,
+    output_dir="outputs",   # where plots/logs go
+    partitions=10,          # target number of partitions
+    verbose=True
+)
 ```
 
-This:
-- Automatically detects skewed column and group key
-- Applies salting to dense/extreme value ranges
-- Logs `.explain()` plans for before and after
-- Saves 3 comparison plots via `skewVisor()` inside `outputs/`
+> **Note for Newcomers:**  
+> 1. **Salted Key**: a new column (`salted_key`) that mixes your original value with a small salt number to spread out heavy hitters.  
+> 2. **Partitions**: think of these as “buckets” Spark uses; more even buckets = faster jobs.
 
 ---
 
-## 🧠 How it Works
+## 🧠 How It Works
 
-1. **Skew Detection**
-   - Uses percentiles and IQR to locate skewed numeric columns
-2. **Cardinality Check**
-   - Finds a suitable column for `groupBy()` (≤ 20 unique values)
-3. **Smart Salting**
-   - Divides values into zones (e.g., 10 percentiles)
-   - Appends a salt value based on value range
-4. **skewVisor Visualization**
-   - Auto-generates:
-     - ✅ Z-Score bar comparison (original vs salted)
-     - ✅ Boxplot of both distributions
-     - ✅ Overlaid histogram
-5. **Repartitioning**
-   - Repartitions on salted key for parallelism and shuffle avoidance
-6. **Logical Plan Logs**
-   - Saves `.explain()` outputs for performance review
-7. **Schema Intelligence**
-   - `detectKey()` identifies primary, composite, or surrogate keys
-   - `schemaVisor()` builds optimal schema with inferred types
+1. **Detect Skew:** Computes percentiles and IQR to find skewed numeric columns.  
+2. **Select Group Key:** Chooses a categorical (string) column with few unique values.  
+3. **Apply Salting:** Divides numeric values into zones and appends a salt suffix.  
+4. **Visualize & Log:** Generates plots and `.explain()` plans for before/after.  
+5. **Repartition:** Rebalances data on the salted key for optimal parallelism.
 
 ---
 
-## 📂 Directory Structure
+## 📂 Project Structure
 
 ```
 SkewBalancer/
-├── outputs/                      # All logs and plots saved here
+├── outputs/                   # Plots & logs
 ├── skewbalancer/
-│   ├── __init__.py              # Exposes auto_balance_skew + class
-│   └── value_skew_balancer.py   # Core logic including skewVisor
-├── notebook_test.ipynb          # Example Jupyter notebook
+│   ├── __init__.py            # Exposes public API
+│   └── value_skew_balancer.py # Core logic
+├── notebook_test.ipynb        # Step-by-step example
+├── README.md                  # (You are here)
 ├── requirements.txt
-├── setup.py
-├── README.md
-└── LICENSE
+└── setup.py
 ```
 
 ---
 
 ## 🔮 Future Enhancements
 
-- Auto-plot Spark executor metrics (task times, shuffle reads)
-- Add categorical skew detection (not just numeric)
-- Support for structured streaming aggregations (micro-batch)
-- Direct integration with Spark UI tooltips / GraphFrames support
+- Auto-plot Spark executor metrics (task times, shuffle stats).  
+- Categorical skew detection (beyond numeric).  
+- Streaming mode support (micro-batches).  
+- Spark UI integration (GraphFrames links).
 
 ---
 
 ## 👨‍💻 Author
 
 **Omar Attia** – IBM Data Engineer  
-Inventor of `skewVisor` and the first **value-based dynamic salting optimizer** for Spark groupBy.  
-🔗 [github.com/OmarAttia95](https://github.com/OmarAttia95)
+Creator of SkewBalancer and the first **value-based dynamic salting optimizer** for Spark.  
+🔗 [GitHub: OmarAttia95](https://github.com/OmarAttia95)
 
 ---
 
