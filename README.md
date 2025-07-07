@@ -9,13 +9,20 @@
 
 ## 🚀 Features
 
-- 🔍 Auto-detect the most skewed numeric column
-- 🧠 Auto-detect best column for `groupBy()` based on cardinality
-- 🌶️ Value-aware salting using **high**, **dense**, and **low** value zones
-- 🧪 Built-in `skewVisor()` for Z-Score bar plots, Boxplots, and Histograms
-- ⚙️ Repartitions on salted key for optimal parallelism
-- 🧾 Saves `.explain()` physical plans for both original and optimized versions
-- 🧠 `detectKey()` and `schemaVisor()` modules for intelligent schema inference
+- Auto-detect the most skewed numeric column using IQR percentile-based skew analysis
+- Auto-detect the best column for `groupBy()` based on low cardinality (≤ 20 distinct values)
+- Smart, value-aware salting based on percentile-zoned ranges (e.g., low, dense, high)
+- Built-in `skewVisor()` generates:
+  - Z-Score bar plots (before vs. after)
+  - Boxplots (original vs. salted)
+  - Histograms with overlaid distributions
+- Intelligent schema optimizer:
+  - `detectKey()` for primary, surrogate, or composite key detection
+  - `schemaVisor()` for non-nullable inference, character limits, and data type tuning
+- Seamless repartitioning on salted compound key for optimal parallelism
+- Logs and saves `.explain()` physical plans to visualize improvements in Spark’s DAG
+- Fully autonomous with fallback logic — designed for batch or real-time pipelines
+- Chainable via `.run_full_balance_pipeline()` and extensible via `auto_balance_skew()`
 
 ---
 
